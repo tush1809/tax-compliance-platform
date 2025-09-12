@@ -1,15 +1,17 @@
 from fastapi import FastAPI
-from langserve import add_routes
-from langchain_aws import ChatBedrockConverse
 from pydantic import BaseModel
-import os
+import boto3
+from langchain_aws import ChatBedrockConverse
 
 app = FastAPI(title="Tax AI Service - Powered by AWS Bedrock")
 
-# Initialize Bedrock LLM
+# Initialize Bedrock client
+bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
+
+# Initialize Bedrock LLM (Haiku works on-demand)
 llm = ChatBedrockConverse(
-    model="anthropic.claude-3-5-sonnet-20240620-v1:0",
-    region_name="ap-south-1"
+    client=bedrock_client,
+    model="anthropic.claude-3-haiku-20240307-v1:0"
 )
 
 class TaxData(BaseModel):
@@ -44,7 +46,7 @@ async def calculate_tax(tax_data: TaxData):
         # Get AI response
         response = await llm.ainvoke(prompt)
         
-        # Basic tax calculation (you'll enhance this)
+        # Basic tax calculation (manual fallback logic)
         if tax_data.regime == "new":
             taxable_income = max(0, tax_data.income - 300000)
             tax_amount = calculate_new_regime_tax(taxable_income)
@@ -55,7 +57,7 @@ async def calculate_tax(tax_data: TaxData):
         return {
             "taxAmount": tax_amount,
             "taxableIncome": taxable_income,
-            "aiInsights": response.content,
+            "aiInsights": response.content if hasattr(response, "content") else str(response),
             "regime": tax_data.regime
         }
     except Exception as e:
@@ -98,3 +100,5 @@ def calculate_old_regime_tax(taxable_income):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
