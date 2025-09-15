@@ -1,22 +1,15 @@
-"""
-Main FastAPI application - Clean and focused
-"""
+"""Main FastAPI Application - FY 2025-26 Compliant"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from .api.v1.tax_routes import router as tax_router
-from .core.config import settings
 
 def create_application() -> FastAPI:
-    """Application factory"""
-    
     app = FastAPI(
-        title="Tax AI Service - Multi-Agent Architecture",
-        description="Intelligent tax calculation with specialized AI agents",
-        version="2.0.0"
+        title="AI Tax Compliance Platform - FY 2025-26",
+        description="Updated for Union Budget 2025 - Zero tax up to ₹12 lakh!",
+        version="2.1.0"
     )
     
-    # CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -25,7 +18,6 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Include routers
     app.include_router(tax_router, prefix="/api/v1")
     
     return app
@@ -35,16 +27,22 @@ app = create_application()
 @app.get("/")
 async def root():
     return {
-        "message": "Tax AI Service - Multi-Agent Architecture",
-        "agents": ["TaxCalculatorAgent"],
+        "message": "AI Tax Compliance Platform - FY 2025-26",
+        "compliance": "Union Budget 2025 Updated",
+        "key_updates": [
+            "Zero tax up to ₹12 lakh income",
+            "Basic exemption increased to ₹4 lakh",
+            "Section 87A rebate increased to ₹60,000",
+            "New 25% tax slab for ₹20L-₹24L",
+            "Standard deduction increased to ₹75,000"
+        ],
         "status": "active"
     }
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "tax-ai-service"}
+    return {"status": "healthy", "service": "tax-ai-service-fy2025"}
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

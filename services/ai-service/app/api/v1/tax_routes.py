@@ -1,80 +1,83 @@
-"""
-FastAPI routes for tax calculation endpoints
-"""
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, Any
+"""Tax Calculation API Routes - FY 2025-26 Compliant"""
+from fastapi import APIRouter, HTTPException
+from ...agents.tax_calculator.calculator_fy2025 import (
+    calculate_new_regime_tax_fy2025,
+    calculate_old_regime_tax_fy2025,
+    TaxCalculationInput
+)
+from ...models.tax_models import TaxData
 
-from ...agents.tax_calculator.agent import TaxCalculatorAgent
-from ...models.tax_models import TaxData, TaxCalculationResult, ComparisonResult
-from ...core.dependencies import get_tax_calculator_agent
-
-router = APIRouter(prefix="/tax", tags=["tax-calculation"])
+router = APIRouter(prefix="/tax", tags=["tax-calculation-fy2025"])
 
 @router.get("/health")
 async def health_check():
-    """Health check for tax calculation service"""
     return {
-        "status": "healthy", 
-        "service": "tax-calculator-agent",
-        "agent": "TaxCalculatorAgent"
+        "status": "healthy",
+        "service": "tax-calculation",
+        "compliance": "FY 2025-26 Budget 2025 Compliant"
     }
 
-@router.post("/calculate", response_model=TaxCalculationResult)
-async def calculate_tax(
-    tax_data: TaxData,
-    agent: TaxCalculatorAgent = Depends(get_tax_calculator_agent)
-) -> TaxCalculationResult:
-    """Calculate tax with AI insights"""
+@router.post("/calculate")
+async def calculate_tax(tax_data: TaxData):
+    """Calculate tax using FY 2025-26 rules"""
     try:
-        result = await agent.calculate_tax(tax_data)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        calc_input = TaxCalculationInput(
+            gross_income=tax_data.income,
+            age=tax_data.age,
+            regime=tax_data.regime,
+            is_salaried=tax_data.is_salaried,
+            deductions_80c=tax_data.deductions_80c,
+            health_insurance_premium=tax_data.health_insurance_premium
+        )
+        
+        if tax_data.regime.lower() == "new":
+            result = calculate_new_regime_tax_fy2025(calc_input)
+        else:
+            result = calculate_old_regime_tax_fy2025(calc_input)
+        
+        return {
+            **result,
+            "message": "FY 2025-26 tax calculation complete",
+            "budget_compliance": "Union Budget 2025 Updated"
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Tax calculation failed: {str(e)}")
 
 @router.post("/compare-regimes")
-async def compare_regimes(
-    tax_data: TaxData,
-    agent: TaxCalculatorAgent = Depends(get_tax_calculator_agent)
-) -> Dict[str, Any]:
-    """Compare tax liability in both regimes"""
+async def compare_regimes(tax_data: TaxData):
+    """Compare tax in both regimes"""
     try:
-        # Remove regime specification for comparison
-        comparison_data = TaxData(income=tax_data.income, age=tax_data.age, regime="new")
-        result = await agent.compare_regimes(comparison_data)
-        return result
+        # New regime calculation
+        new_input = TaxCalculationInput(
+            gross_income=tax_data.income,
+            age=tax_data.age,
+            regime="new",
+            is_salaried=tax_data.is_salaried
+        )
+        new_result = calculate_new_regime_tax_fy2025(new_input)
+        
+        # Old regime calculation
+        old_input = TaxCalculationInput(
+            gross_income=tax_data.income,
+            age=tax_data.age,
+            regime="old",
+            is_salaried=tax_data.is_salaried,
+            deductions_80c=tax_data.deductions_80c,
+            health_insurance_premium=tax_data.health_insurance_premium
+        )
+        old_result = calculate_old_regime_tax_fy2025(old_input)
+        
+        savings = old_result["final_tax"] - new_result["final_tax"]
+        recommended = "new" if savings > 0 else "old"
+        
+        return {
+            "new_regime": new_result,
+            "old_regime": old_result,
+            "tax_savings_with_new_regime": savings,
+            "recommended_regime": recommended,
+            "compliance": "FY 2025-26 Budget Updated"
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Regime comparison failed: {str(e)}")
-
-@router.get("/tax-slabs/{regime}")
-async def get_tax_slabs(regime: str):
-    """Get current tax slabs for specified regime"""
-    if regime.lower() not in ['new', 'old']:
-        raise HTTPException(status_code=400, detail="Regime must be 'new' or 'old'")
-    
-    if regime.lower() == "new":
-        slabs = [
-            {"range": "₹0 - ₹3,00,000", "rate": "0%"},
-            {"range": "₹3,00,001 - ₹7,00,000", "rate": "5%"},
-            {"range": "₹7,00,001 - ₹10,00,000", "rate": "10%"},
-            {"range": "₹10,00,001 - ₹12,00,000", "rate": "15%"},
-            {"range": "₹12,00,001 - ₹15,00,000", "rate": "20%"},
-            {"range": "Above ₹15,00,000", "rate": "30%"}
-        ]
-    else:
-        slabs = [
-            {"range": "₹0 - ₹2,50,000", "rate": "0%"},
-            {"range": "₹2,50,001 - ₹5,00,000", "rate": "5%"},
-            {"range": "₹5,00,001 - ₹10,00,000", "rate": "20%"},
-            {"range": "Above ₹10,00,000", "rate": "30%"}
-        ]
-    
-    return {
-        "regime": regime.lower(),
-        "financial_year": "2025-26",
-        "slabs": slabs,
-        "cess": "4% on total tax",
-        "standard_deduction": "₹50,000" if regime.lower() == "new" else "Not applicable"
-    }
-
+        raise HTTPException(status_code=500, detail=f"Comparison failed: {str(e)}")

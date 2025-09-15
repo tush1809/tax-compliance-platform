@@ -28,20 +28,41 @@ app.get('/health', (req, res) => {
 app.post('/api/calculate-tax', async (req, res) => {
     try {
         console.log('Tax calculation request:', req.body);
-        
-        // Forward to AI service
+
+        // Forward request to AI service correct endpoint
         const response = await axios.post(
-            `${services.aiService}/calculate-tax`,
+            `${services.aiService}/api/v1/tax/calculate`,
             req.body,
             { timeout: 30000 }
         );
-        
+
         res.json(response.data);
     } catch (error) {
         console.error('Error calling AI service:', error.message);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Tax calculation failed',
-            details: error.message 
+            details: error.message
+        });
+    }
+});
+
+// Compare regimes endpoint
+app.post('/api/compare-regimes', async (req, res) => {
+    try {
+        console.log('Compare regimes request:', req.body);
+
+        const response = await axios.post(
+            `${services.aiService}/api/v1/tax/compare-regimes`,
+            req.body,
+            { timeout: 30000 }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error calling AI service:', error.message);
+        res.status(500).json({
+            error: 'Comparison failed',
+            details: error.message
         });
     }
 });
