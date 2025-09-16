@@ -1,14 +1,32 @@
-# Core FastAPI
+# Core FastAPI Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.0.3
 
-# Utilities
+# AWS SDK for Bedrock Integration
+boto3==1.34.0
+botocore==1.34.0
+
+# Retry Logic and Error Handling
+tenacity==8.2.3
+
+# Environment and Configuration
 python-dotenv==1.0.0
 python-multipart==0.0.6
 
-# Testing
+# HTTP Client for Testing
+httpx==0.25.2
+
+# JSON Processing
+orjson==3.9.10
+
+# Testing Framework
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.25.2
+
+# Type Hints Support
+typing-extensions==4.8.0
+
+# Logging
+loguru==0.7.2

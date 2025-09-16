@@ -1,56 +1,92 @@
-version: '3.8'
-
 services:
   # Frontend Service
   frontend:
     build: ./services/frontend
+    container_name: tax_frontend
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://ai-service:8000
+      - VITE_API_URL=http://localhost:8080
+    networks:
+      - tax-platform
     depends_on:
       - api-gateway
+    restart: unless-stopped
 
   # API Gateway Service
   api-gateway:
     build: ./services/api-gateway
+    container_name: tax_api_gateway
     ports:
       - "8080:8080"
     environment:
       - AI_SERVICE_URL=http://ai-service:8000
-      - TAX_ENGINE_URL=http://tax-engine:5000
+      - NODE_ENV=development
+    networks:
+      - tax-platform
     depends_on:
       - ai-service
+    restart: unless-stopped
 
-  # AI Service (LangChain + AWS Bedrock)
+  # AI Service (FY 2025-26 Tax Calculator + AWS Bedrock)
   ai-service:
     build: ./services/ai-service
+    container_name: tax_ai_service
     ports:
       - "8000:8000"
     environment:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/tax_platform
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=true
+    networks:
+      - tax-platform
     volumes:
       - ./data:/app/data
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
 
   # Redis for caching
   redis:
-    image: redis:alpine
+    image: redis:7.2-alpine
+    container_name: tax_redis
     ports:
       - "6379:6379"
+    networks:
+      - tax-platform
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
 
   # MongoDB for data storage
   mongodb:
-    image: mongo:latest
+    image: mongo:8.0
+    container_name: tax_mongodb
     command: ["mongod", "--quiet"]
     ports:
       - "27017:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=tax_platform
+    networks:
+      - tax-platform
     volumes:
       - mongodb_data:/data/db
+    restart: unless-stopped
+
+# Shared network for all services
+networks:
+  tax-platform:
+    driver: bridge
+    name: tax-platform-network
 
 volumes:
   mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
