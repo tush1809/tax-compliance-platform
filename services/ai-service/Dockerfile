@@ -11,11 +11,10 @@ WORKDIR /app
 
 # Install system dependencies for FAISS and other Python packages
 RUN apt-get update && apt-get install -y \
-    curl \
     build-essential \
     libopenblas-dev \
     liblapack-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements.txt first (for better caching)
 COPY requirements.txt .
