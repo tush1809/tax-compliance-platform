@@ -35,7 +35,7 @@ loguru==0.7.2
 langgraph
 
 # Vector Store for RAG
-faiss-cpu
+pinecone-client
 
 # Auth dependencies
 passlib[bcrypt]

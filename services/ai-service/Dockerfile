@@ -1,5 +1,5 @@
-# Use Python 3.10 for better performance and features
-FROM python:3.10-slim
+# Use Python 3.10 (non-slim) for faster builds and better compatibility
+FROM python:3.10
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1

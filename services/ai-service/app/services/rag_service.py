@@ -1,8 +1,9 @@
+
 """
-RAG Service: Embedding, Storing, and Retrieving Tax Knowledge
+RAG Service: Embedding, Storing, and Retrieving Tax Knowledge (Pinecone version)
 """
 
-import faiss
+import pinecone
 import numpy as np
 from typing import List, Tuple
 import boto3
@@ -35,33 +36,43 @@ class BedrockEmbedder:
             logger.error(f"Bedrock embedding failed: {e}")
             return np.zeros(1536, dtype="float32")  # Titan returns 1536-dim embeddings
 
-class SimpleVectorStore:
-    def __init__(self, dim: int):
-        self.index = faiss.IndexFlatL2(dim)
-        self.documents = []
-        self.embeddings = []
 
-    def add_document(self, doc: str, embedding: np.ndarray):
-        self.documents.append(doc)
-        self.embeddings.append(embedding)
-        self.index.add(np.array([embedding]).astype('float32'))
+class PineconeVectorStore:
+    def __init__(self, dim: int, index_name: str = "tax-rag-index", api_key: str = None, environment: str = None):
+        self.dim = dim
+        self.index_name = index_name
+        self.api_key = api_key or "YOUR_PINECONE_API_KEY"
+        self.environment = environment or "YOUR_PINECONE_ENVIRONMENT"
+        pinecone.init(api_key=self.api_key, environment=self.environment)
+        if self.index_name not in pinecone.list_indexes():
+            pinecone.create_index(self.index_name, dimension=self.dim)
+        self.index = pinecone.Index(self.index_name)
 
-    def search(self, query_embedding: np.ndarray, top_k: int = 3) -> List[Tuple[str, float]]:
-        D, I = self.index.search(np.array([query_embedding]).astype('float32'), top_k)
-        results = [(self.documents[i], float(D[0][idx])) for idx, i in enumerate(I[0])]
-        return results
+    def add_document(self, doc_id: str, doc: str, embedding: np.ndarray):
+        # Pinecone expects vectors as (id, values, metadata)
+        self.index.upsert([(doc_id, embedding.tolist(), {"text": doc})])
 
-# Initialize embedder and vector store
+    def search(self, query_embedding: np.ndarray, top_k: int = 3) -> List[Tuple[str, float, str]]:
+        results = self.index.query(vector=query_embedding.tolist(), top_k=top_k, include_metadata=True)
+        return [
+            (match["metadata"]["text"], match["score"], match["id"])
+            for match in results["matches"]
+        ]
+
+
+# Initialize embedder and Pinecone vector store
 embedder = BedrockEmbedder()
-vector_store = SimpleVectorStore(dim=1536)
+vector_store = PineconeVectorStore(dim=1536)
 
 # Example: Add documents from your knowledge base
+
 def add_tax_documents(docs: List[str]):
-    for doc in docs:
+    for i, doc in enumerate(docs):
         embedding = embedder.embed(doc)
-        vector_store.add_document(doc, embedding)
+        vector_store.add_document(str(i), doc, embedding)
 
 # Example usage
+
 if __name__ == "__main__":
     # Replace with actual document loading
     docs = ["Sample tax rule 1", "Sample tax rule 2"]
