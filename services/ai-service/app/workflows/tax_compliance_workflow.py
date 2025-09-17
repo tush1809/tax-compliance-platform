@@ -1,6 +1,11 @@
 
 from langgraph.graph import StateGraph
 from ..services.rag_service import vector_store, embedder
+from ..agents.tax_calculator.calculator_fy2025 import (
+    calculate_new_regime_tax_fy2025,
+    calculate_old_regime_tax_fy2025,
+    TaxCalculationInput
+)
 
 # Example: Define a simple workflow for tax compliance with RAG
 class TaxComplianceState:
@@ -20,8 +25,19 @@ def retrieve_context(state: TaxComplianceState):
 
 # Define nodes (steps)
 def calculate_tax(state: TaxComplianceState):
-    # Placeholder for tax calculation logic
-    state.calculation_result = {'tax_due': 1000}
+    user = state.user_data
+    calc_input = TaxCalculationInput(
+        gross_income=user.get('income', 0),
+        age=user.get('age', 30),
+        regime=user.get('regime', 'new'),
+        is_salaried=user.get('is_salaried', True),
+        deductions_80c=user.get('deductions_80c', 0),
+        health_insurance_premium=user.get('health_insurance_premium', 0)
+    )
+    if calc_input.regime == 'new':
+        state.calculation_result = calculate_new_regime_tax_fy2025(calc_input)
+    else:
+        state.calculation_result = calculate_old_regime_tax_fy2025(calc_input)
     return state
 
 def validate_rules(state: TaxComplianceState):

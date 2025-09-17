@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api.v1.tax_routes import router as tax_router
+from .api.v1.auth_routes import router as auth_router
 
 def create_application() -> FastAPI:
     app = FastAPI(
@@ -19,6 +20,7 @@ def create_application() -> FastAPI:
     )
     
     app.include_router(tax_router, prefix="/api/v1")
+    app.include_router(auth_router, prefix="/api/v1")
     
     return app
 

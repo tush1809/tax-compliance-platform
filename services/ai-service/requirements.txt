@@ -36,3 +36,7 @@ langgraph
 
 # Vector Store for RAG
 faiss-cpu
+
+# Auth dependencies
+passlib[bcrypt]
+python-jose
