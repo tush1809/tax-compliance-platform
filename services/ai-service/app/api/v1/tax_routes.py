@@ -13,6 +13,9 @@ from ...agents.tax_calculator.calculator_fy2025 import (
 from ...models.tax_models import TaxData
 from ...services.ai_service import ai_service
 
+# LangGraph workflow import
+from ...workflows.tax_compliance_workflow import run_workflow
+
 router = APIRouter(prefix="/tax", tags=["ai-powered-tax-calculation"])
 logger = logging.getLogger(__name__)
 
@@ -34,21 +37,11 @@ async def calculate_tax_with_ai_insights(tax_data: TaxData):
     start_time = time.time()
     
     try:
-        # Step 1: Perform deterministic tax calculation
-        calc_input = TaxCalculationInput(
-            gross_income=tax_data.income,
-            age=tax_data.age,
-            regime=tax_data.regime,
-            is_salaried=tax_data.is_salaried,
-            deductions_80c=tax_data.deductions_80c,
-            health_insurance_premium=tax_data.health_insurance_premium
-        )
-        
-        if tax_data.regime.lower() == "new":
-            calculation_result = calculate_new_regime_tax_fy2025(calc_input)
-        else:
-            calculation_result = calculate_old_regime_tax_fy2025(calc_input)
-        
+        # Step 1: Orchestrate workflow using LangGraph
+        workflow_result = run_workflow(tax_data.dict())
+        calculation_result = workflow_result.get('tax', {})
+        validation_result = workflow_result.get('validation', {})
+
         # Step 2: Generate AI insights
         logger.info("Generating AI insights...")
         try:
@@ -59,13 +52,14 @@ async def calculate_tax_with_ai_insights(tax_data: TaxData):
         except Exception as e:
             logger.error(f"AI insights generation failed: {e}")
             ai_insights = "AI insights temporarily unavailable due to technical issues"
-        
+
         # Step 3: Calculate processing time
         processing_time = (time.time() - start_time) * 1000
-        
-        # Step 4: Return enhanced response with AI insights
+
+        # Step 4: Return enhanced response with AI insights and workflow validation
         return {
             **calculation_result,
+            "validation": validation_result,
             "ai_insights": ai_insights,
             "ai_powered": True,
             "processing_time_ms": round(processing_time, 2),

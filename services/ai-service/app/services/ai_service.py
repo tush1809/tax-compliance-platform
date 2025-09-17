@@ -13,97 +13,33 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class BedrockAIService:
-    """AWS Bedrock AI service with retry logic and error handling"""
-    
-    def __init__(self):
-        self.client = None
-        self.model_id = "anthropic.claude-3-haiku-20240307-v1:0"
-        self.region = "us-east-1"
-        self._initialize_client()
-    
+
+# --- Refactored Classes ---
+
+class ClientManager:
+    def __init__(self, region: str):
+        self.region = region
+        self.client = self._initialize_client()
+
     def _initialize_client(self):
-        """Initialize AWS Bedrock client with error handling"""
         try:
-            self.client = boto3.client(
-                'bedrock-runtime',
-                region_name=self.region
-            )
+            client = boto3.client('bedrock-runtime', region_name=self.region)
             logger.info("AWS Bedrock client initialized successfully")
+            return client
         except NoCredentialsError:
             logger.error("AWS credentials not found. AI features will be disabled.")
-            self.client = None
+            return None
         except Exception as e:
             logger.error(f"Failed to initialize AWS Bedrock client: {e}")
-            self.client = None
-    
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type(ClientError)
-    )
-    async def invoke_model_with_retry(self, prompt: str, max_tokens: int = 2000) -> str:
-        """Invoke Bedrock model with retry logic"""
-        if not self.client:
-            return "AI insights unavailable - AWS Bedrock not configured"
-        
-        try:
-            # Format request for Claude 3 Haiku
-            request_payload = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": max_tokens,
-                "temperature": 0.1,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [{"type": "text", "text": prompt}]
-                    }
-                ]
-            }
-            
-            # Convert to JSON
-            request_body = json.dumps(request_payload)
-            
-            # Invoke model
-            response = self.client.invoke_model(
-                modelId=self.model_id,
-                body=request_body,
-                contentType='application/json'
-            )
-            
-            # Parse response
-            response_body = json.loads(response['body'].read())
-            
-            # Extract generated text
-            if 'content' in response_body and len(response_body['content']) > 0:
-                generated_text = response_body['content'][0]['text']
-                logger.info("Successfully generated AI insights")
-                return generated_text
-            else:
-                logger.warning("No content in Bedrock response")
-                return "AI insights generation failed - no content returned"
-                
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            logger.error(f"AWS ClientError: {error_code} - {e}")
-            
-            if error_code == 'AccessDeniedException':
-                return "AI insights unavailable - insufficient AWS permissions"
-            elif error_code == 'ThrottlingException':
-                return "AI insights temporarily unavailable - service busy"
-            else:
-                return f"AI insights unavailable - AWS error: {error_code}"
-                
-        except Exception as e:
-            logger.error(f"Unexpected error in Bedrock call: {e}")
-            return "AI insights temporarily unavailable"
-    
-    async def generate_tax_insights(self, 
-                                  tax_data: Dict[str, Any], 
-                                  calculation_result: Dict[str, Any]) -> str:
-        """Generate comprehensive tax insights"""
-        
-        prompt = f"""You are an expert Indian tax consultant specializing in FY 2025-26 tax laws. 
+            return None
+
+    def is_available(self):
+        return self.client is not None
+
+class PromptBuilder:
+    @staticmethod
+    def build_tax_insight_prompt(tax_data: Dict[str, Any], calculation_result: Dict[str, Any]) -> str:
+        return f"""You are an expert Indian tax consultant specializing in FY 2025-26 tax laws. 
         Analyze this taxpayer's situation and provide actionable insights.
 
 TAXPAYER PROFILE:
@@ -134,11 +70,69 @@ Please provide:
 
 Keep advice practical, specific, and actionable. Use ₹ for amounts."""
 
-        return await self.invoke_model_with_retry(prompt)
-    
-    def is_available(self) -> bool:
-        """Check if AI service is available"""
-        return self.client is not None
+class ModelInvoker:
+    def __init__(self, client, model_id: str):
+        self.client = client
+        self.model_id = model_id
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type(ClientError)
+    )
+    async def invoke(self, prompt: str, max_tokens: int = 2000) -> str:
+        if not self.client:
+            return "AI insights unavailable - AWS Bedrock not configured"
+        try:
+            request_payload = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": max_tokens,
+                "temperature": 0.1,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": prompt}]
+                    }
+                ]
+            }
+            request_body = json.dumps(request_payload)
+            response = self.client.invoke_model(
+                modelId=self.model_id,
+                body=request_body,
+                contentType='application/json'
+            )
+            response_body = json.loads(response['body'].read())
+            if 'content' in response_body and len(response_body['content']) > 0:
+                generated_text = response_body['content'][0]['text']
+                logger.info("Successfully generated AI insights")
+                return generated_text
+            else:
+                logger.warning("No content in Bedrock response")
+                return "AI insights generation failed - no content returned"
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            logger.error(f"AWS ClientError: {error_code} - {e}")
+            if error_code == 'AccessDeniedException':
+                return "AI insights unavailable - insufficient AWS permissions"
+            elif error_code == 'ThrottlingException':
+                return "AI insights temporarily unavailable - service busy"
+            else:
+                return f"AI insights unavailable - AWS error: {error_code}"
+        except Exception as e:
+            logger.error(f"Unexpected error in Bedrock call: {e}")
+            return "AI insights temporarily unavailable"
+
+class TaxInsightService:
+    def __init__(self, region: str, model_id: str):
+        self.client_manager = ClientManager(region)
+        self.model_invoker = ModelInvoker(self.client_manager.client, model_id)
+
+    async def generate_tax_insights(self, tax_data: Dict[str, Any], calculation_result: Dict[str, Any]) -> str:
+        prompt = PromptBuilder.build_tax_insight_prompt(tax_data, calculation_result)
+        return await self.model_invoker.invoke(prompt)
+
+    def is_available(self):
+        return self.client_manager.is_available()
 
 # Global AI service instance
-ai_service = BedrockAIService()
+ai_service = TaxInsightService(region="us-east-1", model_id="anthropic.claude-3-haiku-20240307-v1:0")

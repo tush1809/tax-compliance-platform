@@ -55,58 +55,47 @@ const TaxCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            🧮 AI-Powered Tax Calculator
-          </h1>
-          <p className="text-lg text-gray-600">FY 2025-26 | Union Budget Compliant</p>
-        </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 py-8 px-4">
+      <div className="max-w-3xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Form */}
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              📊 Tax Information
-            </h2>
-
+          <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 border border-gray-800">
+            <h2 className="text-3xl font-bold text-white mb-8 text-center">AI Tax Calculator</h2>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Annual Income (₹)
                 </label>
                 <input
                   type="number"
                   value={formData.income}
                   onChange={(e) => setFormData({...formData, income: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-800 text-white rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
                   placeholder="Enter your annual income"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Age
                 </label>
                 <input
                   type="number"
                   value={formData.age}
                   onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-800 text-white rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
                   placeholder="Enter your age"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Tax Regime
                 </label>
                 <select
                   value={formData.regime}
                   onChange={(e) => setFormData({...formData, regime: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg bg-white"
+                  className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-800 text-white rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
                 >
                   <option value="new">✨ New Regime (Recommended)</option>
                   <option value="old">📋 Old Regime</option>
@@ -125,13 +114,41 @@ const TaxCalculator = () => {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                    Calculating with AI...
+                    <span className="text-white">Calculating with AI...</span>
                   </div>
                 ) : (
-                  '🚀 Calculate Tax with AI Insights'
+                  <span className="text-white">Calculate Tax with AI Insights</span>
                 )}
               </button>
             </div>
+
+            {/* Insights Card Below Button */}
+            {result && result.ai_insights && result.ai_insights !== "AI insights temporarily unavailable" && (
+              <div className="mt-8">
+                <div className="bg-gray-800 border border-blue-700 rounded-2xl shadow-lg p-6">
+                  <div className="flex items-center mb-4">
+                    <span className="text-2xl mr-3 text-blue-400">🤖</span>
+                    <h3 className="text-xl font-bold text-white">AI-Powered Tax Insights</h3>
+                  </div>
+                  <div 
+                    className="prose prose-blue max-w-none text-gray-200 leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: `<p class="mb-2">${showFullInsights 
+                        ? renderMarkdown(result.ai_insights) 
+                        : getInsightsPreview()}</p>`
+                    }}
+                  />
+                  {result.ai_insights.length > 200 && (
+                    <button
+                      onClick={() => setShowFullInsights(!showFullInsights)}
+                      className="mt-4 px-6 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-semibold"
+                    >
+                      {showFullInsights ? '📖 Read Less' : '📚 Read Full Analysis'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Results */}
@@ -194,40 +211,6 @@ const TaxCalculator = () => {
                   )}
                 </div>
 
-                {/* AI Insights */}
-                {result.ai_insights && result.ai_insights !== "AI insights temporarily unavailable" && (
-                  <div className="bg-white rounded-2xl shadow-xl p-8">
-                    <div className="flex items-center mb-6">
-                      <span className="text-2xl mr-3">🤖</span>
-                      <h3 className="text-2xl font-bold text-gray-800">AI-Powered Tax Insights</h3>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border-l-4 border-blue-500">
-                      <div 
-                        className="prose prose-blue max-w-none text-gray-700 leading-relaxed"
-                        dangerouslySetInnerHTML={{
-                          __html: `<p class="mb-2">${showFullInsights 
-                            ? renderMarkdown(result.ai_insights) 
-                            : getInsightsPreview()}</p>`
-                        }}
-                      />
-                      
-                      {result.ai_insights.length > 200 && (
-                        <button
-                          onClick={() => setShowFullInsights(!showFullInsights)}
-                          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-                        >
-                          {showFullInsights ? '📖 Read Less' : '📚 Read Full Analysis'}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="mt-4 text-xs text-gray-500 text-center">
-                      ✨ Powered by Claude AI | FY 2025-26 Budget Compliant
-                    </div>
-                  </div>
-                )}
-
                 {/* Tax Breakdown */}
                 {result.breakdown && result.breakdown.length > 0 && (
                   <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -261,13 +244,7 @@ const TaxCalculator = () => {
               </>
             )}
 
-            {!result && !loading && !error && (
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-                <div className="text-6xl mb-4">🧮</div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Calculate!</h3>
-                <p className="text-gray-500">Enter your details and get instant tax calculations with AI insights</p>
-              </div>
-            )}
+            {/* Remove Ready to Calculate message for clean UI */}
           </div>
         </div>
 

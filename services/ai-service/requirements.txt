@@ -30,3 +30,9 @@ typing-extensions==4.8.0
 
 # Logging
 loguru==0.7.2
+
+# Workflow Orchestration
+langgraph
+
+# Vector Store for RAG
+faiss-cpu
