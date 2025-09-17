@@ -15,6 +15,7 @@ AWS Bedrock
 Database Technologies-->
 MongoDB->for storing document-based data including user tax profiles, calculation history, and AI conversation logs
 Redis->for high-speed caching for frequently accessed tax calculations
+pinecone->vector Database
 
 Infrastructure & DevOps-->
 Containerization:Docker
