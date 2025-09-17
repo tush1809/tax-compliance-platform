@@ -31,11 +31,9 @@ typing-extensions==4.8.0
 # Logging
 loguru==0.7.2
 
-# Workflow Orchestration
-langgraph
+langgraph==0.1.63
 
-# Vector Store for RAG
-pinecone-client
+pinecone-client==3.0.0
 
 # Auth dependencies
 passlib[bcrypt]
