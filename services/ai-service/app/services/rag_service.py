@@ -1,9 +1,8 @@
 
 """
-RAG Service: Embedding, Storing, and Retrieving Tax Knowledge (Pinecone version)
+RAG Service: Embedding, Storing, and Retrieving Tax Knowledge (In-Memory version)
 """
 
-import pinecone
 import numpy as np
 from typing import List, Tuple
 import boto3
@@ -11,6 +10,7 @@ import json
 import logging
 import os
 from dotenv import load_dotenv
+from sklearn.metrics.pairwise import cosine_similarity
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -40,34 +40,46 @@ class BedrockEmbedder:
             return np.zeros(1536, dtype="float32")  # Titan returns 1536-dim embeddings
 
 
-class PineconeVectorStore:
-    def __init__(self, dim: int, index_name: str = "tax-rag-index"):
+class SimpleVectorStore:
+    def __init__(self, dim: int):
         self.dim = dim
-        self.index_name = index_name
-        self.api_key = os.getenv("PINECONE_API_KEY")
-        self.environment = os.getenv("PINECONE_ENVIRONMENT")
-        if not self.api_key or not self.environment:
-            raise ValueError("Pinecone API key or environment not set. Please check your .env file.")
-        pinecone.init(api_key=self.api_key, environment=self.environment)
-        if self.index_name not in pinecone.list_indexes():
-            pinecone.create_index(self.index_name, dimension=self.dim)
-        self.index = pinecone.Index(self.index_name)
+        self.documents = []
+        self.embeddings = []
+        self.doc_ids = []
 
     def add_document(self, doc_id: str, doc: str, embedding: np.ndarray):
-        # Pinecone expects vectors as (id, values, metadata)
-        self.index.upsert([(doc_id, embedding.tolist(), {"text": doc})])
+        self.doc_ids.append(doc_id)
+        self.documents.append(doc)
+        self.embeddings.append(embedding)
 
     def search(self, query_embedding: np.ndarray, top_k: int = 3) -> List[Tuple[str, float, str]]:
-        results = self.index.query(vector=query_embedding.tolist(), top_k=top_k, include_metadata=True)
-        return [
-            (match["metadata"]["text"], match["score"], match["id"])
-            for match in results["matches"]
-        ]
+        if not self.embeddings:
+            return []
+        
+        # Convert to numpy array for similarity calculation
+        embeddings_matrix = np.array(self.embeddings)
+        query_embedding = query_embedding.reshape(1, -1)
+        
+        # Calculate cosine similarity
+        similarities = cosine_similarity(query_embedding, embeddings_matrix)[0]
+        
+        # Get top_k most similar documents
+        top_indices = np.argsort(similarities)[::-1][:top_k]
+        
+        results = []
+        for idx in top_indices:
+            results.append((
+                self.documents[idx],  # text
+                float(similarities[idx]),  # score
+                self.doc_ids[idx]  # id
+            ))
+        
+        return results
 
 
-# Initialize embedder and Pinecone vector store
+# Initialize embedder and simple vector store
 embedder = BedrockEmbedder()
-vector_store = PineconeVectorStore(dim=1536)
+vector_store = SimpleVectorStore(dim=1536)
 
 # Example: Add documents from your knowledge base
 
