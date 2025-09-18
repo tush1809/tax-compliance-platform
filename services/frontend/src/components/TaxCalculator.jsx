@@ -1,7 +1,134 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import TaxInsightsCard from './TaxInsightsCard';
+import InsightModal from './InsightModal';
 
 const TaxCalculator = () => {
+  const [selectedInsight, setSelectedInsight] = useState(null);
+
+  // Tax Insights Data with Detailed Content
+  const taxInsights = [
+    {
+      icon: "📊",
+      title: "Tax Filing Statistics 2025",
+      description: "Over 80M Indians filed their taxes in 2025, showing a 15% increase from previous year. Learn about the growing tax compliance.",
+      content: (
+        <>
+          <h4 className="text-xl font-semibold text-blue-400 mb-4">Key Filing Statistics for 2025</h4>
+          <ul className="space-y-4">
+            <li>• Total Returns Filed: 80.2 Million (+15% YoY)</li>
+            <li>• Digital Filing Rate: 98.5%</li>
+            <li>• Average Processing Time: 12 days</li>
+            <li>• First-time Filers: 12.3 Million</li>
+          </ul>
+          <h4 className="text-xl font-semibold text-blue-400 mt-6 mb-4">Compliance Improvements</h4>
+          <p>The significant increase in tax compliance can be attributed to:</p>
+          <ul className="space-y-2 mt-2">
+            <li>• Simplified filing procedures</li>
+            <li>• Enhanced digital infrastructure</li>
+            <li>• Better taxpayer education</li>
+            <li>• Streamlined verification process</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      icon: "📝",
+      title: "Form 80 Benefits",
+      description: "Maximize your tax savings with Form 80. Claim deductions on rent, education, and medical expenses effectively.",
+      content: (
+        <>
+          <h4 className="text-xl font-semibold text-blue-400 mb-4">Key Deductions Under Form 80</h4>
+          <ul className="space-y-4">
+            <li>
+              <strong className="text-blue-300">House Rent Allowance (HRA)</strong>
+              <p>Claim up to 50% of basic salary in metros, 40% in non-metros</p>
+            </li>
+            <li>
+              <strong className="text-blue-300">Education Expenses</strong>
+              <p>Deduct tuition fees for up to two children</p>
+            </li>
+            <li>
+              <strong className="text-blue-300">Medical Insurance</strong>
+              <p>Up to ₹50,000 for self and family, additional for senior citizens</p>
+            </li>
+          </ul>
+          <div className="mt-6">
+            <h4 className="text-xl font-semibold text-blue-400 mb-4">Documentation Required</h4>
+            <ul className="list-disc pl-4 space-y-2">
+              <li>Rent receipts or lease agreement</li>
+              <li>Education fee receipts</li>
+              <li>Medical insurance premium receipts</li>
+              <li>Investment proofs</li>
+            </ul>
+          </div>
+        </>
+      )
+    },
+    {
+      icon: "💡",
+      title: "Tax Saving Tips",
+      description: "Smart strategies to reduce your tax liability through investments, insurance, and other financial instruments.",
+      content: (
+        <>
+          <h4 className="text-xl font-semibold text-blue-400 mb-4">Investment Options</h4>
+          <ul className="space-y-4">
+            <li>
+              <strong className="text-blue-300">Public Provident Fund (PPF)</strong>
+              <p>Long-term savings with tax-free returns</p>
+            </li>
+            <li>
+              <strong className="text-blue-300">ELSS Mutual Funds</strong>
+              <p>Equity investments with shortest lock-in period</p>
+            </li>
+            <li>
+              <strong className="text-blue-300">National Pension System</strong>
+              <p>Additional tax benefit under Section 80CCD(1B)</p>
+            </li>
+          </ul>
+          <h4 className="text-xl font-semibold text-blue-400 mt-6 mb-4">Advanced Strategies</h4>
+          <ul className="space-y-2">
+            <li>• Salary restructuring</li>
+            <li>• Home loan planning</li>
+            <li>• Tax-free bonds</li>
+            <li>• Health insurance optimization</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      icon: "⚖️",
+      title: "Latest Tax Laws",
+      description: "Stay updated with the most recent changes in Indian tax laws and how they affect your tax planning.",
+      content: (
+        <>
+          <h4 className="text-xl font-semibold text-blue-400 mb-4">Key Changes in 2025</h4>
+          <ul className="space-y-4">
+            <li>
+              <strong className="text-blue-300">New Tax Regime</strong>
+              <p>Simplified structure with modified slabs and no deductions</p>
+            </li>
+            <li>
+              <strong className="text-blue-300">Digital Currency Taxation</strong>
+              <p>Updated guidelines for crypto assets and NFTs</p>
+            </li>
+            <li>
+              <strong className="text-blue-300">Green Energy Benefits</strong>
+              <p>Additional deductions for renewable energy investments</p>
+            </li>
+          </ul>
+          <div className="mt-6">
+            <h4 className="text-xl font-semibold text-blue-400 mb-4">Upcoming Changes</h4>
+            <ul className="list-disc pl-4 space-y-2">
+              <li>Proposed changes to capital gains taxation</li>
+              <li>New deductions for startups</li>
+              <li>Digital filing enhancements</li>
+            </ul>
+          </div>
+        </>
+      )
+    }
+  ];
   const [formData, setFormData] = useState({
     income: '',
     age: '',
@@ -55,8 +182,8 @@ const TaxCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 py-8 px-4 relative">
+      <div className="max-w-3xl mx-auto mb-24">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Form */}
           <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 border border-gray-800">
@@ -105,7 +232,7 @@ const TaxCalculator = () => {
               <button
                 onClick={calculateTax}
                 disabled={loading || !formData.income || !formData.age}
-                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 mt-8 ${
                   loading || !formData.income || !formData.age
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 shadow-lg'
@@ -248,12 +375,44 @@ const TaxCalculator = () => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-12 text-gray-500">
-          <p className="text-sm">
-            🇮🇳 Compliant with FY 2025-26 Union Budget | ⚡ Powered by AI Technology
-          </p>
+        {/* Tax Insights Cards */}
+        <div className="mt-16">
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">
+            <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">Latest Tax Insights</span>
+          </h2>
+          <div className="tax-insights-grid">
+            {taxInsights.map((insight, index) => (
+              <TaxInsightsCard
+                key={index}
+                icon={insight.icon}
+                title={insight.title}
+                description={insight.description}
+                onLearnMore={() => setSelectedInsight(insight)}
+              />
+            ))}
+            
+            {/* Insight Modal */}
+            <InsightModal
+              isOpen={selectedInsight !== null}
+              onClose={() => setSelectedInsight(null)}
+              title={selectedInsight?.title}
+              icon={selectedInsight?.icon}
+              content={selectedInsight?.content}
+            />
+          </div>
         </div>
+
+        {/* Enhanced Footer */}
+        <footer className="fixed bottom-0 left-0 right-0 bg-black bg-opacity-90 backdrop-blur-sm py-4 px-6 z-50">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <p className="text-sm text-gray-400">
+              🇮🇳 Compliant with FY 2025-26 Union Budget | ⚡ Powered by AI Technology
+            </p>
+            <p className="text-sm font-semibold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+              Tush develops ™
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );
