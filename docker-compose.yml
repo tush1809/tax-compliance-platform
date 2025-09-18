@@ -40,6 +40,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - MONGODB_URL=mongodb://admin:password123@mongodb:27017/tax_platform
       - REDIS_URL=redis://redis:6379
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
       - DEBUG=true
     networks:
       - tax-platform
