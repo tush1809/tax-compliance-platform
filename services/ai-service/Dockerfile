@@ -9,11 +9,9 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 
-# Install system dependencies for FAISS and other Python packages
+# Install system dependencies for scikit-learn and numpy
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libopenblas-dev \
-    liblapack-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements.txt first (for better caching)
