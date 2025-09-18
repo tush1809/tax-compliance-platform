@@ -9,8 +9,11 @@ from typing import List, Tuple
 import boto3
 import json
 import logging
+import os
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 
 class BedrockEmbedder:
@@ -38,11 +41,13 @@ class BedrockEmbedder:
 
 
 class PineconeVectorStore:
-    def __init__(self, dim: int, index_name: str = "tax-rag-index", api_key: str = None, environment: str = None):
+    def __init__(self, dim: int, index_name: str = "tax-rag-index"):
         self.dim = dim
         self.index_name = index_name
-        self.api_key = api_key or "YOUR_PINECONE_API_KEY"
-        self.environment = environment or "YOUR_PINECONE_ENVIRONMENT"
+        self.api_key = os.getenv("PINECONE_API_KEY")
+        self.environment = os.getenv("PINECONE_ENVIRONMENT")
+        if not self.api_key or not self.environment:
+            raise ValueError("Pinecone API key or environment not set. Please check your .env file.")
         pinecone.init(api_key=self.api_key, environment=self.environment)
         if self.index_name not in pinecone.list_indexes():
             pinecone.create_index(self.index_name, dimension=self.dim)
