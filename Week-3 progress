@@ -1,0 +1,24 @@
+                                                                            WEEK PROGRESS
+
+-------------------------------------------------|
+LangGraph Implementation--->
+--------------------------------------------------|
+-Implements sophisticated workflow using LangGraph for tax compliance processing featuring a stateful graph-based system with distinct processing nodes so the core workflow orchestrates tax calculation, compliance validation, and AI-powered insights.
+-Sequential processing of tax data and Context-aware calculations are ensured by implementing a directed acyclic flow
+
+
+--------------------------------------------------|
+Retrieval Augmented Generation (RAG) System---->
+--------------------------------------------------|
+--The RAG system dynamically retrieves relevant information based on the specific context of each tax calculation request. This ensures that all tax processing is performed with consideration of the latest regulations and guidelines
+--vector store implementation is optimized for performance, utilizing cosine similarity calculations to identify the most relevant tax documents for any given query
+
+-------------------
+Improved UI-->
+-------------------
+->Added the tax insight feature in frontend UI where information regarding tax displayed in card format such as no.of people filed Income Tax Last Year
+
+---------------------
+vector Database-->
+---------------------
+->Tried PINECONE as vector Database but later shifted to in memory vector Database
